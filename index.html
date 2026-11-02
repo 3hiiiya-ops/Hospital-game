@@ -9,7 +9,14 @@
 #rageScene .rage-sub{padding:7px 12px;text-align:center;color:#fce0c8;font-size:13px;font-weight:700}
 #rageScene .rage-end{border:1px solid #b89e87;background:#65514b;padding:5px 9px;font-size:12px}
 @media(max-height:700px){#rageScene{bottom:calc(115px + env(safe-area-inset-bottom))}#rageScene .rage-art{height:120px}}
-#zoomUi{position:absolute;right:12px;bottom:195px;z-index:6;display:flex;align-items:center;gap:3px;background:#1e3335d9;border:1px solid #99b4a5;border-radius:9px;padding:3px;font-size:11px;box-shadow:0 2px 8px #0005}#zoomUi button{padding:5px 8px;min-width:29px;border-radius:6px;font-size:15px}#zoomReadout{min-width:40px;text-align:center;color:#fff3e5}</style></head><body><canvas id="game"></canvas><div id="hud"><div class="panel"><div>🏥 오늘도 퇴근 못 했습니다 v11.1 · <span id="day">1</span>일차</div><div id="stressbar"></div><div style="font-size:11px;margin-top:4px">🤯 정신적 타격 <span id="stress">0</span>/8 · ☕ <span id="coffee">0</span></div></div><div id="topbuttons"><button id="rage" style="display:none;background:#a83e2d;border-color:#ffc583">🔥 극대노!</button><button id="rooms">🗺️ 안내도</button><button id="reset">🏠 로비복귀</button></div></div><div id="legend">방에 가까이 가서 💬 누르기</div><div id="zoomUi" aria-label="게임 화면 크기"><span id="zoomReadout">68%</span></div><div id="hint"></div><div id="toast"></div><div id="controls"><div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div><div class="actions"><button id="talk">💬 대화</button><button id="journal">📋 일지</button></div></div><div id="modal"><div id="dialog"><div id="speaker"></div><div id="round"></div><div id="line"></div><div id="choices"></div><button id="quit">🚪 대화 끝내기</button></div></div><div id="rageScene" role="dialog" aria-label="극대노 이벤트"><div class="rage-title"><span>🔥 극대노! 병원 탈출 대소동</span><button type="button" id="rageClose" class="rage-end">✕ 닫기</button></div><div class="rage-art" id="rageArt"></div><div class="rage-sub" id="rageSub">병원 전체가 술렁입니다…</div></div><script>
+#zoomUi{position:absolute;right:12px;bottom:195px;z-index:6;display:flex;align-items:center;gap:3px;background:#1e3335d9;border:1px solid #99b4a5;border-radius:9px;padding:3px;font-size:11px;box-shadow:0 2px 8px #0005}#zoomUi button{padding:5px 8px;min-width:29px;border-radius:6px;font-size:15px}#zoomReadout{min-width:40px;text-align:center;color:#fff3e5}
+/* iOS control interactions: prevent text selection, loupe & callout */
+#game,#controls,#controls *,#hud,#hud *,#hint,#zoomUi,#zoomUi *,button{
+ -webkit-user-select:none!important;user-select:none!important;
+ -webkit-touch-callout:none!important;touch-action:none;
+ -webkit-tap-highlight-color:transparent!important;
+}
+</style></head><body><canvas id="game"></canvas><div id="hud"><div class="panel"><div>🏥 오늘도 퇴근 못 했습니다 v11.1 · <span id="day">1</span>일차</div><div id="stressbar"></div><div style="font-size:11px;margin-top:4px">🤯 정신적 타격 <span id="stress">0</span>/8 · ☕ <span id="coffee">0</span></div></div><div id="topbuttons"><button id="rage" style="display:none;background:#a83e2d;border-color:#ffc583">🔥 극대노!</button><button id="rooms">🗺️ 안내도</button><button id="reset">🏠 로비복귀</button></div></div><div id="legend">방에 가까이 가서 💬 누르기</div><div id="zoomUi" aria-label="게임 화면 크기"><span id="zoomReadout">68%</span></div><div id="hint"></div><div id="toast"></div><div id="controls"><div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div><div class="actions"><button id="talk">💬 대화</button><button id="journal">📋 일지</button></div></div><div id="modal"><div id="dialog"><div id="speaker"></div><div id="round"></div><div id="line"></div><div id="choices"></div><button id="quit">🚪 대화 끝내기</button></div></div><div id="rageScene" role="dialog" aria-label="극대노 이벤트"><div class="rage-title"><span>🔥 극대노! 병원 탈출 대소동</span><button type="button" id="rageClose" class="rage-end">✕ 닫기</button></div><div class="rage-art" id="rageArt"></div><div class="rage-sub" id="rageSub">병원 전체가 술렁입니다…</div></div><script>
 (()=>{'use strict';
 const T=32,W=49,H=35,canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let cw=0,ch=0,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);cw=innerWidth;ch=innerHeight;canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false}addEventListener('resize',resize);resize();
 const map=Array.from({length:H},()=>Array(W).fill(0));const fixtures=[],labels=[],npcs=[],doors=[];
@@ -105,24 +112,45 @@ if(!im?.complete||!im.naturalWidth)return;
 const sz=look==='hero'?64:49, height=look==='hero'?78:61;
 ctx.save();ctx.translate(x,y);if(bed){ctx.rotate(-Math.PI/2);ctx.globalAlpha=.96;}
 let cycle=anim*1.65;
-let bounce=moving?Math.abs(Math.sin(cycle))*2.1:0;
+let bounce=moving?Math.abs(Math.sin(cycle))*1.4:0;
 if(moving){ctx.rotate(Math.sin(cycle)*0.015);ctx.translate(Math.sin(cycle)*0.85,0)}
 ctx.imageSmoothingEnabled=false;
 ctx.drawImage(im,-sz/2,-height+bounce,sz,height);
+// Small alternating footfall and arm swing on the original, detailed sprite.
+// No replacement of the character art; overlay limited to tiny limb pixels.
+if(look==='hero'&&moving){
+ const stride=Math.sin(cycle*1.9);
+ const legY=-5+Math.max(0,stride)*2;
+ ctx.fillStyle='#eef1eb';
+ ctx.fillRect(-15+Math.round(stride*3),legY,10,3);
+ ctx.fillRect(5-Math.round(stride*3),-5+Math.max(0,-stride)*2,10,3);
+}
 ctx.restore();
 }
 const camZoom=.68;
-const SEATED_IMAGE=new Image();SEATED_IMAGE.src=SPRITES.down.src;
+// Two distinct fully-seated visitors, painted on the original sofa graphics.
+// Heads, torso, arms, lap and feet belong to the same sprite.
 function drawWaitingPeople(){
- if(!SEATED_IMAGE.complete||!SEATED_IMAGE.naturalWidth)return;
- // Sit inside the real background sofa outlines, no extra rectangular/placeholder NPCs.
- for(const n of npcs.filter(p=>p.kind==='waiting')){
-   const px=n.x*T,py=n.y*T;
-   ctx.save();ctx.beginPath();ctx.rect(px-19,py-43,38,42);ctx.clip();
-   ctx.imageSmoothingEnabled=false;
-   ctx.drawImage(SEATED_IMAGE,px-22,py-51,44,96);
-   ctx.restore();
- }
+ const people=npcs.filter(p=>p.kind==='waiting');
+ people.forEach((n,idx)=>{
+  const px=Math.round(n.x*T),py=Math.round(n.y*T);
+  const shirt=idx?'#a77f91':'#536d8e';
+  const skin=idx?'#e9ba91':'#d3a17f';
+  const hair=idx?'#55413a':'#312c33';
+  const pants=idx?'#454c5c':'#565250';
+  ctx.save();ctx.translate(px,py);
+  ctx.imageSmoothingEnabled=false;
+  const r=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
+  // sitting legs and shoes, within the existing sofa geometry
+  r(-13,-5,10,10,pants);r(3,-5,10,10,pants);
+  r(-14,3,11,4,'#35393c');r(3,3,11,4,'#34363a');
+  r(-15,-25,30,23,shirt);r(-19,-23,7,18,skin);r(12,-23,7,18,skin);
+  r(-12,-41,24,19,skin);r(-14,-43,28,10,hair);
+  r(-15,-39,5,15,hair);r(11,-39,5,13,hair);
+  if(idx){r(10,-29,8,9,hair);r(14,-24,6,8,hair);r(-7,-32,2,2,'#493b3c');r(5,-32,2,2,'#493b3c')}
+  else{r(-12,-42,23,5,'#302b36');r(-7,-31,2,2,'#3c2b2c');r(5,-31,2,2,'#3c2b2c');r(-8,-20,16,3,'#b8a58f')}
+  ctx.restore();
+ });
 }
 function render(time){ctx.clearRect(0,0,cw,ch);const zoom=camZoom;const viewW=cw/zoom,viewH=ch/zoom;const camX=Math.max(0,Math.min(W*T-viewW,player.x*T-viewW/2));const camY=Math.max(0,Math.min(H*T-viewH,player.y*T-viewH/2));ctx.save();ctx.scale(zoom,zoom);ctx.translate(-camX,-camY);// The actual user-approved detailed art is the map background, not a simplified tile renderer.
 if(MAPART.complete&&MAPART.naturalWidth)ctx.drawImage(MAPART,0,0,W*T,H*T);else {ctx.fillStyle='#5b4b48';ctx.fillRect(0,0,W*T,H*T)}
@@ -133,10 +161,36 @@ if(rageMode){for(let i=0;i<17;i++){const f=(time*.012+i*27)%125,fx=player.x*T-28
 drawRealSprite(player.x*T,player.y*T,player.face,player.anim,'hero','hero',false);
 if(player.smoking){ctx.fillStyle='#f0e8dd';ctx.fillRect(player.x*T+7,player.y*T-12,8,3);ctx.fillStyle='#e8a06d';ctx.fillRect(player.x*T+14,player.y*T-12,2,3);ctx.strokeStyle='#c6d7d2';ctx.lineWidth=2;for(let i=0;i<3;i++){let rise=(time*.026+i*16)%52;ctx.globalAlpha=.7*(1-rise/60);ctx.beginPath();ctx.moveTo(player.x*T+15+Math.sin(rise/7)*6,player.y*T-13-rise);ctx.lineTo(player.x*T+17+Math.sin(rise/8)*6,player.y*T-19-rise);ctx.stroke()}ctx.globalAlpha=1}
 ctx.restore();requestAnimationFrame(render)}requestAnimationFrame(render);
+for(const el of [document.getElementById('game'),document.getElementById('controls'),document.getElementById('hud')]){
+ el.addEventListener('contextmenu',e=>e.preventDefault());
+ el.addEventListener('selectstart',e=>e.preventDefault());
+}
 const dirs={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};let downDir=null,last=performance.now(),modalState=null,smokePrompted=false;const smokeRoom=()=>player.x>=40&&player.y>=20;const leavingSmoke=(nx,ny)=>player.smoking&&smokeRoom()&&!(nx>=40&&ny>=20);
 function enterSmokeCheck(){if(smokeRoom()&&!player.smoking&&!smokePrompted&&!modalState){smokePrompted=true;showModal('🚬 흡연실','흡연을 하시겠습니까?', [{text:'예 · 게임 속 담배 물기',fn:()=>{player.smoking=true;closeModal();toast('연기가 피어오릅니다. (게임 연출)')}},{text:'아니오 · 그냥 쉬기',fn:closeModal}])}if(!smokeRoom())smokePrompted=false}
 function move(dx,dy,dt){player.walking=false;if(modalState||rageMode)return;let m=Math.hypot(dx,dy);if(!m)return;player.walking=true;dx/=m;dy/=m;const sp=5.25*dt;const nx=player.x+dx*sp,ny=player.y+dy*sp;if(leavingSmoke(nx,ny)){showModal('🚬 흡연실','담배를 끄시겠습니까?\n끄기 전에는 흡연실을 나갈 수 없습니다.',[{text:'예 · 끄고 나가기',fn:()=>{player.smoking=false;closeModal();toast('담배를 껐습니다. 이제 나갈 수 있어요.')}},{text:'아니오 · 더 머무르기',fn:closeModal}]);return}if(canStand(nx,player.y))player.x=nx;if(canStand(player.x,ny))player.y=ny;if(Math.abs(dx)>Math.abs(dy))player.face=dx>0?'right':'left';else player.face=dy>0?'down':'up';player.anim+=dt*12;enterSmokeCheck()}
-function nearest(){if(rageMode)return null;let near=null,dist=2.25;for(const n of npcs){if(n.gone||n.escaping)continue;let d=Math.hypot(n.x-player.x,n.y-player.y);if(d<dist){dist=d;near=n}}return near}
+// Interaction requires a visible human at the recorded position, but the player
+// stands on the accessible FRONT/SIDE of the bed, never on top of the patient.
+const talkSpots={
+ pack:[[5.05,9.7],[4.1,9.7],[6.0,9.7]],
+ extra:[[8.85,9.7],[7.9,9.7],[9.8,9.7]],
+ miss:[[13.55,9.7],[12.6,9.7],[14.5,9.7]],
+ iv1:[[39.1,10.5],[38.3,10.5]],iv2:[[42.8,10.5],[43.6,10.5]],
+ pressure:[[4.1,22.1],[3.6,22.4]],
+ front1:[[24.9,20.5],[25.6,20.5]],front2:[[29.55,20.5],[29.0,20.5]],
+ waiting1:[[17.8,26.4],[18.6,26.4]],waiting2:[[38.7,26.4],[37.8,26.4]]
+};
+function nearest(){
+ if(rageMode)return null;
+ let near=null,dist=1.75;
+ for(const n of npcs){
+  if(n.gone||n.escaping)continue;
+  for(const [x,y] of talkSpots[n.id]||[]){
+   const d=Math.hypot(x-player.x,y-player.y);
+   if(d<dist){dist=d;near=n}
+  }
+ }
+ return near;
+}
 let hint=document.getElementById('hint');function tick(t){let dt=Math.min(.04,(t-last)/1000);last=t;advanceEscape(dt);if(downDir){let v=dirs[downDir];move(v[0],v[1],dt)}else{let dx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),dy=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);move(dx,dy,dt)}const n=nearest();hint.style.display=n&&!modalState?'block':'none';hint.textContent=n?'💬 '+n.name+' · 대화 가능':'';requestAnimationFrame(tick)}const keys={};addEventListener('keydown',e=>{keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key===' '||e.key==='Enter')startTalk()});addEventListener('keyup',e=>{keys[e.key]=false});for(const b of document.querySelectorAll('[data-dir]')){b.addEventListener('pointerdown',e=>{e.preventDefault();downDir=b.dataset.dir;b.setPointerCapture(e.pointerId)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>{if(downDir===b.dataset.dir)downDir=null})}requestAnimationFrame(tick);
 const banks={
 pack:['팩이 왜 이렇게 안 뜨거워요?','전에는 더 뜨거웠는데요?','이 정도로 뭐가 좋아져요?','한번 더 데워다 주세요.','나는 오래 병원 다녀봤어요.','아니 그래도 더 뜨거웠으면 좋겠는데요?'],
@@ -186,7 +240,20 @@ else if(round===1)line=(endings[n.kind]||endings.waiting)[a.firstPick%3];
 else line=pool[(variant+3+a.firstPick)%pool.length];
 let custom=(retorts[n.kind]||retorts.waiting).flat();
 let statements=round===0?[custom[variant%custom.length],custom[(variant+1)%custom.length],custom[(variant+2)%custom.length]]:round===1?[(follow[n.kind]||follow.waiting)[a.firstPick%3],(follow[n.kind]||follow.waiting)[(a.firstPick+1)%3],custom[(variant+2)%custom.length]]:[(follow[n.kind]||follow.waiting)[(variant+1)%3],(follow[n.kind]||follow.waiting)[(variant+2)%3],custom[(variant+1)%custom.length]];
-showModal(n.name,line,statements.map((t,i)=>({text:(i===0?'🔥 ':i===1?'💬 ':'😈 ')+t,fn:()=>{if(!active)return;if(active.round===0)active.firstPick=i;active.round++;if(active.round>=3){let reply=(endings[n.kind]||endings.waiting)[(variant+active.firstPick+1)%3];showModal(n.name,reply,[{text:'좋아요, 여기서 끝내죠.',fn:finishTalk}]);}else nextRound()}})))}
+const options=statements.map((t,i)=>({text:(i===0?'🔥 ':i===1?'💬 ':'😈 ')+t,fn:()=>{if(!active)return;if(active.round===0)active.firstPick=i;active.round++;if(active.round>=3){let reply=(endings[n.kind]||endings.waiting)[(variant+active.firstPick+1)%3];showModal(n.name,reply,[{text:'좋아요, 여기서 끝내죠.',fn:finishTalk}]);}else nextRound()}}));
+if(round===2){
+ options.push({text:'👊 말없이 때린다 (코믹 연출)',fn:()=>{
+   showModal('💥 과장된 만화 효과음','퍽! (현실의 폭력이 아닌 게임 속 과장된 연출)\n상대가 깜짝 놀라 뒤로 물러난다.',[{text:'대화 종료',fn:finishTalk}]);
+ }});
+ options.push({text:'🚪 말없이 내쫓는다 (코믹 연출)',fn:()=>{
+   showModal('🚪 퇴장 연출','문이 쾅! 상대가 황급히 자리를 피한다.\n병원은 잠깐 조용해졌다.',[{text:'대화 종료',fn:finishTalk}]);
+ }});
+ options.push({text:'💬 대화하기 · 끝까지 받아친다',fn:()=>{
+   active.round=3;showModal(n.name,(endings[n.kind]||endings.waiting)[(variant+active.firstPick+1)%3],[{text:'이제 대화 끝내기',fn:finishTalk}]);
+ }});
+}
+showModal(n.name,line,options);
+}
 function finishTalk(){if(!active)return;let kind=active.n.kind;active=null;if(kind==='gratitude'){coffee+=1;stress=Math.max(0,stress-1);hud();showModal('🎁 칭찬 환자 이벤트','감사 인사를 들었어요! 가상의 커피 쿠폰 +1 ☕\n스트레스 -1', [{text:'고맙습니다!',fn:closeModal}])}else if(['doctor','waiting'].includes(kind)){showModal('✨ 대화 종료','이야기를 마쳤습니다.',[{text:'돌아가기',fn:closeModal}])}else{stress=Math.min(8,stress+1);hud();if(stress>=8){showModal('🤯 스트레스 한계!','정신적 타격을 8번 받았습니다!\n오늘은 이쯤에서 퇴근해도 되겠는데요?', [{text:'🏠 퇴근하고 다음 날 출근',fn:()=>{day++;stress=0;player.x=25;player.y=28.8;player.smoking=false;hud();closeModal();toast('다음 날 출근했습니다. 멘탈 초기화!')}},{text:'오늘 조금 더 버티기',fn:closeModal}])}else showModal('🥊 말싸움 종료','3번의 티키타카 완료!\n정신적 타격 +1 ('+stress+'/8)\n다음에 다시 만나면 다른 대화가 이어집니다.',[{text:'후... 다시 일하자',fn:closeModal}])}persist()}
 document.getElementById('talk').onclick=startTalk;document.getElementById('reset').onclick=()=>{player.x=25;player.y=28.8;player.smoking=false;smokePrompted=false;persist();toast('로비 입구로 이동했습니다. 기록은 유지돼요.')};document.getElementById('journal').onclick=()=>showModal('📋 근무일지','근무 '+day+'일차\n정신적 타격 '+stress+'/8\n가상 커피 쿠폰 '+coffee+'개\n대화한 횟수 '+Object.values(encounter).reduce((a,b)=>a+b,0)+'회\n벽에 끼면 로비 복귀 버튼을 이용하세요.',[{text:'🧪 테스트: 스트레스 5칸 만들기',fn:()=>{stress=Math.max(stress,5);hud();closeModal();toast('테스트용 스트레스 5/8! 🔥 극대노 버튼을 누르세요.')}},{text:'계속 근무하기',fn:closeModal},{text:'오늘 퇴근하기',fn:()=>{day++;stress=0;player.x=25;player.y=28.8;player.smoking=false;hud();closeModal();toast('새로운 근무일이 시작됐습니다.')}}]);
 const rooms=[['출입구',25,28.8],['물리치료실',12,9.8],['진료실 1',24,9.7],['진료실 2',31,9.7],['수액실',41,10],['도수치료실 1',5,21],['도수치료실 2',11,21],['도수치료실 3',13,24.8],['원무과',27,21],['🚬 흡연실',43,23.6]];
