@@ -16,7 +16,7 @@
  -webkit-touch-callout:none!important;touch-action:none;
  -webkit-tap-highlight-color:transparent!important;
 }
-</style></head><body><canvas id="game"></canvas><div id="hud"><div class="panel"><div>🏥 오늘도 퇴근 못 했습니다 v11.7 · <span id="day">1</span>일차</div><div id="stressbar"></div><div style="font-size:11px;margin-top:4px">🤯 정신적 타격 <span id="stress">0</span>/8 · ☕ <span id="coffee">0</span></div></div><div id="topbuttons"><button id="rage" style="display:none;background:#a83e2d;border-color:#ffc583">🔥 극대노!</button><button id="rooms">🗺️ 안내도</button><button id="reset">🏠 로비복귀</button></div></div><div id="legend">방에 가까이 가서 💬 누르기</div><div id="zoomUi" aria-label="게임 화면 크기"><span id="zoomReadout">68%</span></div><div id="hint"></div><div id="toast"></div><div id="controls"><div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div><div class="actions"><button id="talk">💬 대화</button><button id="journal">📋 일지</button></div></div><div id="modal"><div id="dialog"><div id="speaker"></div><div id="round"></div><div id="line"></div><div id="choices"></div><button id="quit">🚪 대화 끝내기</button></div></div><div id="rageScene" role="dialog" aria-label="극대노 이벤트"><div class="rage-title"><span>🔥 극대노! 병원 탈출 대소동</span><button type="button" id="rageClose" class="rage-end">✕ 닫기</button></div><div class="rage-art" id="rageArt"></div><div class="rage-sub" id="rageSub">병원 전체가 술렁입니다…</div></div><script>
+</style></head><body><canvas id="game"></canvas><div id="hud"><div class="panel"><div>🏥 오늘도 퇴근 못 했습니다 v11.8 · <span id="day">1</span>일차</div><div id="stressbar"></div><div style="font-size:11px;margin-top:4px">🤯 정신적 타격 <span id="stress">0</span>/8 · ☕ <span id="coffee">0</span></div></div><div id="topbuttons"><button id="rage" style="display:none;background:#a83e2d;border-color:#ffc583">🔥 극대노!</button><button id="rooms">🗺️ 안내도</button><button id="reset">🏠 로비복귀</button></div></div><div id="legend">방에 가까이 가서 💬 누르기</div><div id="zoomUi" aria-label="게임 화면 크기"><span id="zoomReadout">68%</span></div><div id="hint"></div><div id="toast"></div><div id="controls"><div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div><div class="actions"><button id="talk">💬 대화</button><button id="journal">📋 일지</button></div></div><div id="modal"><div id="dialog"><div id="speaker"></div><div id="round"></div><div id="line"></div><div id="choices"></div><button id="quit">🚪 대화 끝내기</button></div></div><div id="rageScene" role="dialog" aria-label="극대노 이벤트"><div class="rage-title"><span>🔥 극대노! 병원 탈출 대소동</span><button type="button" id="rageClose" class="rage-end">✕ 닫기</button></div><div class="rage-art" id="rageArt"></div><div class="rage-sub" id="rageSub">병원 전체가 술렁입니다…</div></div><script>
 (()=>{'use strict';
 const T=32,W=59,H=35,canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let cw=0,ch=0,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);cw=innerWidth;ch=innerHeight;canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false}addEventListener('resize',resize);resize();
 const map=Array.from({length:H},()=>Array(W).fill(0));const fixtures=[],labels=[],npcs=[],doors=[];
@@ -182,10 +182,10 @@ function drawWaitingPeople(){
  }
 }
 function drawDoctors(){
- // Keep the doctors in the same exam-room positions, but render them as naturally seated.
+ // Render both doctors as naturally seated: hips on the stool, knees bent downward.
  const doctors=[
-  {id:'doctor1',x:23.35,y:8.45,lean:0},
-  {id:'doctor2',x:30.91,y:8.45,lean:0}
+  {id:'doctor1',x:23.35,y:8.45},
+  {id:'doctor2',x:30.91,y:8.45}
  ];
  for(const d of doctors){
   const img=PATIENT_SPRITES[d.id];
@@ -194,17 +194,33 @@ function drawDoctors(){
   const cx=Math.round(d.x*T), cy=Math.round(d.y*T);
   ctx.save();
   ctx.imageSmoothingEnabled=false;
-  // Draw most of the original full-body sprite a little lower and narrower so it reads as seated.
-  const drawH=80, drawW=Math.round(drawH*iw/ih*0.84);
-  ctx.drawImage(img,0,0,iw,ih,cx-Math.round(drawW/2)-4,cy-63,drawW,drawH);
-  // Cover the standing lower legs, then redraw bent seated lower legs/shoes.
-  ctx.fillStyle='rgba(63,55,58,.18)';
-  ctx.fillRect(cx-16,cy-2,30,18);
-  const legSrcY=Math.floor(ih*0.76), legH=ih-legSrcY;
-  // both knees bend toward the monitor side to feel seated at the desk.
-  ctx.drawImage(img,Math.round(iw*0.16),legSrcY,Math.round(iw*0.62),legH,cx+1,cy+1,22,13);
-  ctx.fillStyle='rgba(44,41,46,.42)';
-  ctx.fillRect(cx-10,cy+2,19,3); // stool front edge crossing under thighs
+
+  // upper body down to upper-knee line, lowered so the hip rests on the chair seat
+  const torsoSrcH=Math.floor(ih*0.76);
+  const torsoDrawH=60;
+  const torsoDrawW=Math.round(torsoDrawH*iw/torsoSrcH*0.88);
+  const torsoX=cx-Math.round(torsoDrawW/2)-2;
+  const torsoY=cy-54;
+  ctx.drawImage(img,0,0,iw,torsoSrcH,torsoX,torsoY,torsoDrawW,torsoDrawH);
+
+  // mask the standing shins/feet from the original source so they do not look like a standing pose
+  ctx.fillStyle='rgba(51,42,44,.14)';
+  ctx.fillRect(cx-15,cy-4,30,18);
+
+  // Bent lower legs hanging downward from the seat edge.
+  const calfSrcY=Math.floor(ih*0.79);
+  const calfSrcH=ih-calfSrcY;
+  // left lower leg
+  ctx.drawImage(img,Math.round(iw*0.18),calfSrcY,Math.round(iw*0.17),calfSrcH,cx-11,cy-1,7,16);
+  // right lower leg
+  ctx.drawImage(img,Math.round(iw*0.54),calfSrcY,Math.round(iw*0.17),calfSrcH,cx+3,cy-1,7,16);
+  // feet, small and flat on the floor, taken from the original shoe area
+  ctx.drawImage(img,Math.round(iw*0.14),Math.floor(ih*0.93),Math.round(iw*0.22),Math.round(ih*0.06),cx-12,cy+12,9,4);
+  ctx.drawImage(img,Math.round(iw*0.50),Math.floor(ih*0.93),Math.round(iw*0.22),Math.round(ih*0.06),cx+2,cy+12,9,4);
+
+  // subtle seat shadow under the thighs to blend with the stool instead of slicing the body
+  ctx.fillStyle='rgba(41,39,45,.28)';
+  ctx.fillRect(cx-11,cy+1,22,2);
   ctx.restore();
  }
 }
@@ -234,7 +250,28 @@ drawSmokingRoomOverlay();
 /* 기존 배경 인물은 원본 그림에 남겨둠: 중복 NPC 스프라이트를 그리지 않음 */
 if(rageMode){for(let i=0;i<17;i++){const f=(time*.012+i*27)%125,fx=player.x*T-28+(i%7)*8,fy=player.y*T-5-f;ctx.globalAlpha=.83*(1-f/145);ctx.fillStyle=i%3===0?'#fff39d':i%2?'#f89c39':'#e85024';ctx.beginPath();ctx.moveTo(fx-6,fy+29);ctx.lineTo(fx+4,fy-11-i%7);ctx.lineTo(fx+12,fy+29);ctx.fill()}ctx.globalAlpha=1}
 drawRealSprite(player.x*T,player.y*T,player.face,player.anim,'hero','hero',false);
-if(player.smoking){ctx.fillStyle='#f0e8dd';ctx.fillRect(player.x*T+7,player.y*T-12,8,3);ctx.fillStyle='#e8a06d';ctx.fillRect(player.x*T+14,player.y*T-12,2,3);ctx.strokeStyle='#c6d7d2';ctx.lineWidth=2;for(let i=0;i<3;i++){let rise=(time*.026+i*16)%52;ctx.globalAlpha=.7*(1-rise/60);ctx.beginPath();ctx.moveTo(player.x*T+15+Math.sin(rise/7)*6,player.y*T-13-rise);ctx.lineTo(player.x*T+17+Math.sin(rise/8)*6,player.y*T-19-rise);ctx.stroke()}ctx.globalAlpha=1}
+if(player.smoking){
+  const bx=player.x*T, by=player.y*T;
+  const pos={
+    down:[bx+10,by-19],
+    up:[bx+10,by-21],
+    left:[bx+4,by-19],
+    right:[bx+16,by-19]
+  }[player.face]||[bx+10,by-19];
+  const sx=pos[0], sy=pos[1];
+  ctx.fillStyle='#f0e8dd';ctx.fillRect(sx,sy,7,3);
+  ctx.fillStyle='#e8a06d';ctx.fillRect(sx+6,sy,2,3);
+  ctx.strokeStyle='#c6d7d2';ctx.lineWidth=2;
+  for(let i=0;i<3;i++){
+    let rise=(time*.026+i*16)%52;
+    ctx.globalAlpha=.7*(1-rise/60);
+    ctx.beginPath();
+    ctx.moveTo(sx+7+Math.sin(rise/7)*4,sy-1-rise);
+    ctx.lineTo(sx+9+Math.sin(rise/8)*4,sy-7-rise);
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1
+}
 ctx.restore();requestAnimationFrame(render)}requestAnimationFrame(render);
 for(const el of [document.getElementById('game'),document.getElementById('controls'),document.getElementById('hud')]){
  el.addEventListener('contextmenu',e=>e.preventDefault());
