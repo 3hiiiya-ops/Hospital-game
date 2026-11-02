@@ -16,7 +16,7 @@
  -webkit-touch-callout:none!important;touch-action:none;
  -webkit-tap-highlight-color:transparent!important;
 }
-</style></head><body><canvas id="game"></canvas><div id="hud"><div class="panel"><div>🏥 오늘도 퇴근 못 했습니다 v11.4 · <span id="day">1</span>일차</div><div id="stressbar"></div><div style="font-size:11px;margin-top:4px">🤯 정신적 타격 <span id="stress">0</span>/8 · ☕ <span id="coffee">0</span></div></div><div id="topbuttons"><button id="rage" style="display:none;background:#a83e2d;border-color:#ffc583">🔥 극대노!</button><button id="rooms">🗺️ 안내도</button><button id="reset">🏠 로비복귀</button></div></div><div id="legend">방에 가까이 가서 💬 누르기</div><div id="zoomUi" aria-label="게임 화면 크기"><span id="zoomReadout">68%</span></div><div id="hint"></div><div id="toast"></div><div id="controls"><div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div><div class="actions"><button id="talk">💬 대화</button><button id="journal">📋 일지</button></div></div><div id="modal"><div id="dialog"><div id="speaker"></div><div id="round"></div><div id="line"></div><div id="choices"></div><button id="quit">🚪 대화 끝내기</button></div></div><div id="rageScene" role="dialog" aria-label="극대노 이벤트"><div class="rage-title"><span>🔥 극대노! 병원 탈출 대소동</span><button type="button" id="rageClose" class="rage-end">✕ 닫기</button></div><div class="rage-art" id="rageArt"></div><div class="rage-sub" id="rageSub">병원 전체가 술렁입니다…</div></div><script>
+</style></head><body><canvas id="game"></canvas><div id="hud"><div class="panel"><div>🏥 오늘도 퇴근 못 했습니다 v11.5 · <span id="day">1</span>일차</div><div id="stressbar"></div><div style="font-size:11px;margin-top:4px">🤯 정신적 타격 <span id="stress">0</span>/8 · ☕ <span id="coffee">0</span></div></div><div id="topbuttons"><button id="rage" style="display:none;background:#a83e2d;border-color:#ffc583">🔥 극대노!</button><button id="rooms">🗺️ 안내도</button><button id="reset">🏠 로비복귀</button></div></div><div id="legend">방에 가까이 가서 💬 누르기</div><div id="zoomUi" aria-label="게임 화면 크기"><span id="zoomReadout">68%</span></div><div id="hint"></div><div id="toast"></div><div id="controls"><div class="pad"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="right" data-dir="right">▶</button><button class="down" data-dir="down">▼</button></div><div class="actions"><button id="talk">💬 대화</button><button id="journal">📋 일지</button></div></div><div id="modal"><div id="dialog"><div id="speaker"></div><div id="round"></div><div id="line"></div><div id="choices"></div><button id="quit">🚪 대화 끝내기</button></div></div><div id="rageScene" role="dialog" aria-label="극대노 이벤트"><div class="rage-title"><span>🔥 극대노! 병원 탈출 대소동</span><button type="button" id="rageClose" class="rage-end">✕ 닫기</button></div><div class="rage-art" id="rageArt"></div><div class="rage-sub" id="rageSub">병원 전체가 술렁입니다…</div></div><script>
 (()=>{'use strict';
 const T=32,W=59,H=35,canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let cw=0,ch=0,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);cw=innerWidth;ch=innerHeight;canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false}addEventListener('resize',resize);resize();
 const map=Array.from({length:H},()=>Array(W).fill(0));const fixtures=[],labels=[],npcs=[],doors=[];
@@ -142,14 +142,24 @@ let bounce=moving?Math.abs(Math.sin(cycle))*1.4:0;
 if(moving){ctx.rotate(Math.sin(cycle)*0.015);ctx.translate(Math.sin(cycle)*0.85,0)}
 ctx.imageSmoothingEnabled=false;
 ctx.drawImage(im,-sz/2,-height+bounce,sz,height);
-// Small alternating footfall and arm swing on the original, detailed sprite.
-// No replacement of the character art; overlay limited to tiny limb pixels.
+// Stronger crossed arm/leg motion while preserving the detailed approved sprite art.
 if(look==='hero'&&moving){
  const stride=Math.sin(cycle*1.9);
- const legY=-5+Math.max(0,stride)*2;
- ctx.fillStyle='#eef1eb';
- ctx.fillRect(-15+Math.round(stride*3),legY,10,3);
- ctx.fillRect(5-Math.round(stride*3),-5+Math.max(0,-stride)*2,10,3);
+ const front=Math.round(stride*4), back=Math.round(-stride*4);
+ const armY=-44+Math.round(Math.abs(stride)*2);
+ const handY=-30+Math.round(Math.abs(stride)*2);
+ ctx.fillStyle='#21384f';
+ ctx.fillRect(-25+front,armY,5,12);
+ ctx.fillRect(20+back,armY+1,5,12);
+ ctx.fillStyle='#ddb08c';
+ ctx.fillRect(-24+front,handY,4,4);
+ ctx.fillRect(21+back,handY+1,4,4);
+ ctx.fillStyle='#f2f3ef';
+ ctx.fillRect(-15+front,-4+Math.max(0,stride)*2,10,4);
+ ctx.fillRect(5+back,-4+Math.max(0,-stride)*2,10,4);
+ ctx.fillStyle='#dbe2eb';
+ ctx.fillRect(-15+front,0+Math.max(0,stride)*2,10,3);
+ ctx.fillRect(5+back,0+Math.max(0,-stride)*2,10,3);
 }
 ctx.restore();
 }
@@ -188,31 +198,45 @@ function drawWaitingPeople(){
  }
 }
 function drawDoctors(){
- // Use the two reference-image doctor cutouts (not block sprites).
- // Right-hand office chair beside each computer is the seat; crop at lap, not feet.
- const docs=[{name:'doctor1',x:26.65,y:9.38},{name:'doctor2',x:34.65,y:9.38}];
+ // Seat both doctors on the round stools the user pointed at.
+ // Keep their original approved doctor sprites, but render the FULL body.
+ const docs=[{name:'doctor1',x:20.25,y:9.45,flip:false},{name:'doctor2',x:28.2,y:9.45,flip:false}];
  for(const d of docs){
   const img=PATIENT_SPRITES[d.name];
   if(!img||!img.complete||!img.naturalWidth)continue;
-  const cropH=Math.round(img.naturalHeight*.76);
-  const h=66,w=Math.round(h*img.naturalWidth/cropH);
-  const cx=Math.round(d.x*T),bottom=Math.round(d.y*T);
+  const h=90,w=Math.round(h*img.naturalWidth/img.naturalHeight);
+  const cx=Math.round(d.x*T), seatY=Math.round(d.y*T);
   ctx.save();ctx.imageSmoothingEnabled=false;
-  // The original armchair remains visible behind the seated doctor.
-  // Hands and coat rest on the seat; no floating feet or duplicated chairs.
-  ctx.drawImage(img,0,0,img.naturalWidth,cropH,cx-Math.round(w/2),bottom-h,w,h);
+  if(d.flip){ctx.scale(-1,1);ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,-cx-Math.round(w/2),seatY-h+2,w,h)}
+  else{ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,cx-Math.round(w/2),seatY-h+2,w,h)}
+  // compact stool overlap so they read as sitting, not floating
+  ctx.fillStyle='rgba(64,55,60,.14)';
+  ctx.fillRect(cx-14,seatY-6,28,9);
+  // subtle desk-side shadow cue so they visually read as facing the monitor
+  ctx.fillStyle='rgba(53,42,42,.20)';
+  ctx.fillRect(cx+6,seatY-28,7,26);
   ctx.restore();
  }
 }
 
 function drawSmokingRoomOverlay(){
- // Separate pixel-art room appended to the right side of the hospital.
- // Original hospital background, sofas and IV room are untouched.
+ // Cleaner, more natural smoking-room wing attached to the right hallway.
+ ctx.save();ctx.imageSmoothingEnabled=false;
+ // bridge / corridor connection to the new wing
+ const bx=47.6*T, by=20.1*T, bw=3.1*T, bh=6.2*T;
+ ctx.fillStyle='#8a776f'; ctx.fillRect(bx,by,bw,bh);
+ ctx.fillStyle='#b8a49f'; ctx.fillRect(bx+5,by+5,bw-10,bh-10);
+ ctx.fillStyle='rgba(182,206,198,.18)'; ctx.fillRect(bx+5,by+5,bw-10,bh-10);
+ ctx.fillStyle='#514243'; ctx.fillRect(bx,by,3,bh); ctx.fillRect(bx+bw-3,by,3,bh);
+ ctx.fillStyle='#d4c4bc'; ctx.fillRect(bx+3,by+2,bw-6,2); ctx.fillRect(bx+3,by+bh-4,bw-6,2);
  if(SMOKING_WING.complete&&SMOKING_WING.naturalWidth){
-   ctx.save();ctx.imageSmoothingEnabled=false;
-   ctx.drawImage(SMOKING_WING,48*T,15*T,11*T,16*T);
-   ctx.restore();
+   ctx.drawImage(SMOKING_WING,49.1*T,15.25*T,9.25*T,15.25*T);
  }
+ // doorway trim / threshold where the corridor enters the smoking room
+ ctx.fillStyle='#6a5a57'; ctx.fillRect(49.1*T,23.3*T,0.5*T,2.65*T);
+ ctx.fillStyle='#cdb9ac'; ctx.fillRect(49.45*T,23.4*T,0.22*T,2.45*T);
+ ctx.fillStyle='rgba(61,48,49,.28)'; ctx.fillRect(49.65*T,25.55*T,0.8*T,0.18*T);
+ ctx.restore();
 }
 
 function render(time){ctx.clearRect(0,0,cw,ch);const zoom=camZoom;const viewW=cw/zoom,viewH=ch/zoom;const camX=Math.max(0,Math.min(W*T-viewW,player.x*T-viewW/2));const camY=Math.max(0,Math.min(H*T-viewH,player.y*T-viewH/2));ctx.save();ctx.scale(zoom,zoom);ctx.translate(-camX,-camY);// The actual user-approved detailed art is the map background, not a simplified tile renderer.
@@ -241,7 +265,7 @@ const talkSpots={
  iv1:[[39.1,10.5],[38.3,10.5]],iv2:[[42.8,10.5],[43.6,10.5]],
  pressure:[[4.1,22.1],[3.6,22.4]],
  front1:[[24.9,20.5],[25.6,20.5]],front2:[[29.55,20.5],[29.0,20.5]],
- waiting1:[[16.15,27.3]],waiting2:[[36.7,27.3]],waiting3:[[18.0,27.3]],waiting4:[[39.0,27.3]],doctor1:[[26.65,10.2],[26.1,10.8]],doctor2:[[34.65,10.2],[34.1,10.8]]
+ waiting1:[[16.15,27.3]],waiting2:[[36.7,27.3]],waiting3:[[18.0,27.3]],waiting4:[[39.0,27.3]],doctor1:[[20.55,10.2],[21.1,10.2]],doctor2:[[28.55,10.2],[29.1,10.2]]
 };
 function nearest(){
  if(rageMode)return null;
